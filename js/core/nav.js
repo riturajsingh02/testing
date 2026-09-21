@@ -199,7 +199,196 @@
     if (window.ShopifyService && typeof window.ShopifyService.syncHeaderAuth === 'function') {
       window.ShopifyService.syncHeaderAuth();
     }
+
+    // 6. Initialize Luxury Rotating Announcement Bar
+    initAnnouncementBar();
   }
+
+  /* =========================================================
+     LUXURY ROTATING ANNOUNCEMENT BAR ENGINE
+     Features:
+     - Multi-slide promotion carousel with smooth transitions
+     - Left (<) and Right (>) navigation buttons
+     - Autoplay timer with pause-on-hover & pause-on-touch
+     - Touch swipe gestures (left/right) for mobile
+     - Full keyboard accessibility
+     - Automatic upgrade if legacy markup exists
+     ========================================================= */
+  function initAnnouncementBar() {
+    const bars = document.querySelectorAll('.announcement-bar');
+    if (!bars.length) return;
+
+    bars.forEach(bar => {
+      // Prevent multiple initializations on the same element
+      if (bar.dataset.carouselInitialized === 'true') return;
+      bar.dataset.carouselInitialized = 'true';
+
+      let carousel = bar.querySelector('.announcement-carousel');
+      let prevBtn = bar.querySelector('.announcement-prev');
+      let nextBtn = bar.querySelector('.announcement-next');
+
+      // If legacy ticker HTML is present, upgrade gracefully
+      if (!carousel) {
+        const leftBox = bar.querySelector('.announcement-left');
+        let itemsHtml = [];
+        if (leftBox && leftBox.children.length > 0) {
+          itemsHtml = Array.from(leftBox.children).map(span => span.innerHTML.trim());
+        }
+        if (!itemsHtml.length) {
+          itemsHtml = [
+            '✦ Free Express Shipping on Orders Above ₹999',
+            '♡ Cash on Delivery (COD) Available Across India',
+            '🕯️ Bulk Orders Accepted',
+            '🌿 100% Natural Botanical Soy Wax',
+            '♡ Handcrafted With Love'
+          ];
+        }
+
+        bar.innerHTML = `
+          <button type="button" class="announcement-nav-btn announcement-prev" aria-label="Previous announcement">
+            <svg aria-hidden="true" focusable="false" width="11" height="11" viewBox="0 0 16 18" fill="none">
+              <path d="M11 1L3 9L11 17" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+            </svg>
+          </button>
+          <div class="announcement-carousel" id="announcementCarousel">
+            ${itemsHtml.map((content, i) => `
+              <div class="announcement-item ${i === 0 ? 'active' : ''}" data-index="${i}">
+                <span>${content}</span>
+              </div>
+            `).join('')}
+          </div>
+          <button type="button" class="announcement-nav-btn announcement-next" aria-label="Next announcement">
+            <svg aria-hidden="true" focusable="false" width="11" height="11" viewBox="0 0 16 18" fill="none">
+              <path d="M5 17L13 9L5 1" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
+            </svg>
+          </button>
+        `;
+
+        carousel = bar.querySelector('.announcement-carousel');
+        prevBtn = bar.querySelector('.announcement-prev');
+        nextBtn = bar.querySelector('.announcement-next');
+      }
+
+      const items = bar.querySelectorAll('.announcement-item');
+      if (items.length <= 1) return;
+
+      let currentIndex = 0;
+      let autoplayTimer = null;
+      let isTransitioning = false;
+      const AUTOPLAY_INTERVAL = 4500;
+
+      function goTo(nextIndex, direction = 'next') {
+        if (isTransitioning || nextIndex === currentIndex) return;
+        isTransitioning = true;
+
+        const currentItem = items[currentIndex];
+        const nextItem = items[nextIndex];
+
+        // Reset state classes
+        items.forEach(it => it.classList.remove('slide-out-left', 'slide-out-right'));
+
+        if (direction === 'next') {
+          currentItem.classList.add('slide-out-left');
+        } else {
+          currentItem.classList.add('slide-out-right');
+        }
+
+        setTimeout(() => {
+          currentItem.classList.remove('active', 'slide-out-left', 'slide-out-right');
+          nextItem.classList.add('active');
+          currentIndex = nextIndex;
+          isTransitioning = false;
+        }, 220);
+      }
+
+      function nextSlide() {
+        const nextIdx = (currentIndex + 1) % items.length;
+        goTo(nextIdx, 'next');
+      }
+
+      function prevSlide() {
+        const prevIdx = (currentIndex - 1 + items.length) % items.length;
+        goTo(prevIdx, 'prev');
+      }
+
+      function startAutoplay() {
+        stopAutoplay();
+        autoplayTimer = setInterval(nextSlide, AUTOPLAY_INTERVAL);
+      }
+
+      function stopAutoplay() {
+        if (autoplayTimer) {
+          clearInterval(autoplayTimer);
+          autoplayTimer = null;
+        }
+      }
+
+      // Prev / Next button listeners
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          prevSlide();
+          startAutoplay();
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          nextSlide();
+          startAutoplay();
+        });
+      }
+
+      // Pause on hover
+      bar.addEventListener('mouseenter', stopAutoplay);
+      bar.addEventListener('mouseleave', startAutoplay);
+
+      // Mobile Touch Swipe Handling
+      let touchStartX = 0;
+      let touchStartY = 0;
+      bar.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          stopAutoplay();
+        }
+      }, { passive: true });
+
+      bar.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 1) {
+          const deltaX = e.changedTouches[0].clientX - touchStartX;
+          const deltaY = e.changedTouches[0].clientY - touchStartY;
+          if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+            if (deltaX < 0) {
+              nextSlide();
+            } else {
+              prevSlide();
+            }
+          }
+          startAutoplay();
+        }
+      }, { passive: true });
+
+      // Keyboard accessibility
+      bar.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          nextSlide();
+          startAutoplay();
+        } else if (e.key === 'ArrowLeft') {
+          prevSlide();
+          startAutoplay();
+        }
+      });
+
+      // Start auto-rotation
+      startAutoplay();
+    });
+  }
+
+  window.initAnnouncementBar = initAnnouncementBar;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindNavEvents);
