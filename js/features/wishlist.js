@@ -17,7 +17,7 @@ function updateWishlistUI() {
       : `${count} Fragrance${count === 1 ? '' : 's'} Saved`;
   }
 
-  // Sync Kimirica New Arrival & Catalog card wishlist heart buttons
+  // Sync New Arrival & Catalog card wishlist heart buttons
   document.querySelectorAll('.km-wishlist-toggle').forEach(btn => {
     const card = btn.closest('.km-product-card');
     if (!card) return;
