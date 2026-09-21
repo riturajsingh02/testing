@@ -210,6 +210,14 @@
     } else if (password.length < 8) {
       setInlineError(passwordInput, 'Password must be at least 8 characters long.');
       hasError = true;
+    } else {
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasDigitOrSpecial = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+      if (!hasUpper || !hasLower || !hasDigitOrSpecial) {
+        setInlineError(passwordInput, 'Must include an uppercase letter, lowercase letter, and a number or symbol.');
+        hasError = true;
+      }
     }
 
     if (confirmInput && password !== confirmPassword) {
@@ -242,7 +250,8 @@
         email,
         phone,
         password,
-        confirmPassword
+        confirmPassword,
+        agreeTerms: Boolean(termsInput?.checked)
       });
 
       showSuccessBanner(form, 'Account created successfully! Redirecting to your account sanctuary...');
