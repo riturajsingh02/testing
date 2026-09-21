@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCartUI();
   updateWishlistUI();
   setupEventListeners();
-  setupKimiricaSections();
+  setupLuxuryShowcaseSections();
   initDynamicHeader();
 });
 
@@ -461,7 +461,7 @@ function initDynamicHeader() {
 window.initDynamicHeader = initDynamicHeader;
 
 /* =========================================================
-   KIMIRICA LUXURY SECTIONS LOGIC (RITUALS & NEW ARRIVALS)
+   LUXURY SECTIONS LOGIC (RITUALS & NEW ARRIVALS)
    ========================================================= */
 window.kmAddToCart = function (productId, btn) {
   if (typeof addToCart === 'function') {
@@ -493,7 +493,7 @@ window.kmToggleWishlist = function (productId, btn) {
   }
 };
 
-function setupKimiricaSections() {
+function setupLuxuryShowcaseSections() {
   // 1. Rituals Section Carousel Scroll
   const ritualsTrack = document.getElementById('ritualsTrack');
   const ritualPrevBtn = document.getElementById('ritualPrevBtn');
