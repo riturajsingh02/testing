@@ -155,23 +155,25 @@
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.message || 'Invalid email or password. Please verify your credentials.');
+        throw new Error(data.message || data.error || 'Invalid email or password. Please verify your credentials.');
       }
 
-      if (data.token) {
-        this.setSession(data.token, data.expiresAt, remember);
+      const token = data.token || data.accessToken;
+      if (token) {
+        this.setSession(token, data.expiresAt, remember);
       }
 
-      if (data.user) {
+      const rawUser = data.user || data.customer;
+      if (rawUser) {
         const formatted = {
-          id: data.user.id,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          displayName: data.user.name || `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || 'Client',
-          email: data.user.email,
-          phone: data.user.phone,
-          createdAt: data.user.createdAt,
-          tier: 'Sanctuary Connoisseur',
+          id: rawUser.id,
+          firstName: rawUser.firstName || (rawUser.name ? rawUser.name.split(' ')[0] : ''),
+          lastName: rawUser.lastName || (rawUser.name ? rawUser.name.split(' ').slice(1).join(' ') : ''),
+          displayName: rawUser.displayName || rawUser.name || `${rawUser.firstName || ''} ${rawUser.lastName || ''}`.trim() || 'Client',
+          email: rawUser.email,
+          phone: rawUser.phone || '',
+          createdAt: rawUser.createdAt,
+          tier: rawUser.tier || 'Sanctuary Connoisseur',
           defaultAddress: null,
           addresses: [],
           orders: []
@@ -186,7 +188,7 @@
     },
 
     // 2. Customer Registration (Sign up) - Real Backend Database Persistence
-    async register({ firstName, lastName, email, phone, password, confirmPassword }) {
+    async register({ firstName, lastName, email, phone, password, confirmPassword, agreeTerms = true }) {
       if (!firstName) throw new Error('First name is required.');
       if (!email) throw new Error('Email address is required.');
       if (!password) throw new Error('Password is required.');
@@ -205,29 +207,32 @@
           email,
           phone,
           password,
-          confirmPassword
+          confirmPassword,
+          agreeTerms
         })
       });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.message || 'Could not complete registration. Please verify your details.');
+        throw new Error(data.message || data.error || 'Could not complete registration. Please verify your details.');
       }
 
-      if (data.token) {
-        this.setSession(data.token, data.expiresAt, true);
+      const token = data.token || data.accessToken;
+      if (token) {
+        this.setSession(token, data.expiresAt, true);
       }
 
-      if (data.user) {
+      const rawUser = data.user || data.customer;
+      if (rawUser) {
         const formatted = {
-          id: data.user.id,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
-          displayName: data.user.name || `${data.user.firstName || ''} ${data.user.lastName || ''}`.trim() || 'Client',
-          email: data.user.email,
-          phone: data.user.phone,
-          createdAt: data.user.createdAt,
-          tier: 'Sanctuary Connoisseur',
+          id: rawUser.id,
+          firstName: rawUser.firstName || (rawUser.name ? rawUser.name.split(' ')[0] : ''),
+          lastName: rawUser.lastName || (rawUser.name ? rawUser.name.split(' ').slice(1).join(' ') : ''),
+          displayName: rawUser.displayName || rawUser.name || `${rawUser.firstName || ''} ${rawUser.lastName || ''}`.trim() || 'Client',
+          email: rawUser.email,
+          phone: rawUser.phone || '',
+          createdAt: rawUser.createdAt,
+          tier: rawUser.tier || 'Sanctuary Connoisseur',
           defaultAddress: null,
           addresses: [],
           orders: []
